@@ -8,6 +8,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -26,10 +27,12 @@ loop:
 		log.Println("错误,请输入数字类型!!")
 		goto loop
 	}
+	wait := sync.WaitGroup{}
+	wait.Add(NumCount)
 	for i := 0; i < NumCount; i++ {
+		log.Printf("开始计算第%d组。", i+1)
 		go func() {
 			begin := time.Now()
-			log.Printf("开始计算第%d组。", i+1)
 			numMap := map[string]int{}
 			rand.Seed(time.Now().UnixNano())
 			for i := 0; i < 17721088; i++ {
@@ -67,7 +70,9 @@ loop:
 				}
 			}
 			pass := time.Now().Sub(begin)
-			log.Printf("pass %ds key:%s , times :%d",pass / 1e9, max, times)
+			log.Printf("pass %ds key:%s , times :%d", pass/1e9, max, times)
+			wait.Done()
 		}()
 	}
+	wait.Wait()
 }
