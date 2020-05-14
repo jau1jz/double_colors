@@ -27,6 +27,7 @@ loop:
 		goto loop
 	}
 	for i := 0; i < NumCount; i++ {
+		begin := time.Now()
 		log.Printf("开始计算第%d组。", i+1)
 		numMap := map[string]int{}
 		rand.Seed(time.Now().UnixNano())
@@ -64,6 +65,7 @@ loop:
 				max = k
 			}
 		}
-		log.Printf("key:%s , times :%d", max, times)
+		pass := time.Now().Sub(begin)
+		log.Printf("pass %ds key:%s , times :%d",pass / 1e9, max, times)
 	}
 }
