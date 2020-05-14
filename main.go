@@ -27,45 +27,47 @@ loop:
 		goto loop
 	}
 	for i := 0; i < NumCount; i++ {
-		begin := time.Now()
-		log.Printf("开始计算第%d组。", i+1)
-		numMap := map[string]int{}
-		rand.Seed(time.Now().UnixNano())
-		for i := 0; i < 17721088; i++ {
-			nums := []int{}
-			find := func(num int) bool {
-				for _, v := range nums {
-					if v == num {
-						return true
+		go func() {
+			begin := time.Now()
+			log.Printf("开始计算第%d组。", i+1)
+			numMap := map[string]int{}
+			rand.Seed(time.Now().UnixNano())
+			for i := 0; i < 17721088; i++ {
+				nums := []int{}
+				find := func(num int) bool {
+					for _, v := range nums {
+						if v == num {
+							return true
+						}
 					}
+					return false
 				}
-				return false
-			}
 
-			for i := 0; i < 6; i++ {
-				for {
-					redNum := rand.Intn(33) + 1
-					if find(redNum) {
-						continue
+				for i := 0; i < 6; i++ {
+					for {
+						redNum := rand.Intn(33) + 1
+						if find(redNum) {
+							continue
+						}
+						nums = append(nums, redNum)
+						break
 					}
-					nums = append(nums, redNum)
-					break
+				}
+				blueNum := rand.Intn(16)
+				nums = append(nums, blueNum+1)
+				sort.Ints(nums[:6])
+				numMap[fmt.Sprintf("%v", nums)]++
+			}
+			max := ""
+			times := 0
+			for k, v := range numMap {
+				if v > times {
+					times = v
+					max = k
 				}
 			}
-			blueNum := rand.Intn(16)
-			nums = append(nums, blueNum+1)
-			sort.Ints(nums[:6])
-			numMap[fmt.Sprintf("%v", nums)]++
-		}
-		max := ""
-		times := 0
-		for k, v := range numMap {
-			if v > times {
-				times = v
-				max = k
-			}
-		}
-		pass := time.Now().Sub(begin)
-		log.Printf("pass %ds key:%s , times :%d",pass / 1e9, max, times)
+			pass := time.Now().Sub(begin)
+			log.Printf("pass %ds key:%s , times :%d",pass / 1e9, max, times)
+		}()
 	}
 }
