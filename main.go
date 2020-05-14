@@ -12,6 +12,8 @@ import (
 )
 
 func main() {
+	log.Printf("欢迎使用！")
+
 	log.Printf("双色球一等奖号码计算系统。\n")
 
 	log.Printf("你需要计算几组双色球号码:\n")
