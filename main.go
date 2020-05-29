@@ -28,16 +28,15 @@ loop2:
 	}
 	CalcCount = CalcCount * 1e6
 	wait := sync.WaitGroup{}
-
 	begin := time.Now()
-	numMap := map[string]int{}
+	numMap := [4]map[string]int{}
 	rand.Seed(time.Now().UnixNano())
 	waitCalc := sync.WaitGroup{}
 	waitCalc.Add(4)
 	splitCount := CalcCount / 4
-	locker := sync.Mutex{}
 	for step := 0; step < 4; step++ {
-		go func() {
+		go func(index int) {
+			numMap[index] = make(map[string]int)
 			for k := 0; k < splitCount; k++ {
 				nums := []int{}
 				find := func(num int) bool {
@@ -62,24 +61,28 @@ loop2:
 				blueNum := rand.Intn(16)
 				nums = append(nums, blueNum+1)
 				sort.Ints(nums[:6])
-				locker.Lock()
-				numMap[fmt.Sprintf("%v", nums)]++
-				locker.Unlock()
+				numMap[index][fmt.Sprintf("%v", nums)]++
 			}
 			waitCalc.Done()
-		}()
+		}(step)
 	}
 
 	waitCalc.Wait()
+	pass := time.Now().Sub(begin)
+	log.Printf("pass %ds ", pass/1e9)
+	begin = time.Now()
 	max := ""
 	times := 0
-	for k, v := range numMap {
-		if v > times {
-			times = v
-			max = k
+	for _, v := range numMap {
+		for k, v1 := range v {
+			if v1 > times {
+				times = v1
+				max = k
+			}
 		}
+
 	}
-	pass := time.Now().Sub(begin)
+	pass = time.Now().Sub(begin)
 	log.Printf("pass %ds key:%s , times :%d", pass/1e9, max, times)
 	wait.Wait()
 
