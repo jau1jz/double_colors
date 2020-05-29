@@ -19,22 +19,30 @@ func main() {
 
 	input := bufio.NewScanner(os.Stdin)
 	log.Printf("需要计算多少次（百万）:\n")
-loop2:
+loop1:
 	input.Scan()
 	CalcCount, err := strconv.Atoi(input.Text())
 	if err != nil {
 		log.Println("错误,请输入数字类型!!")
+		goto loop1
+	}
+	log.Printf("需要开启多少个协程:\n")
+	CalcCount = CalcCount * 1e6
+loop2:
+	input.Scan()
+	GoCount, err := strconv.Atoi(input.Text())
+	if err != nil {
+		log.Println("错误,请输入数字类型!!")
 		goto loop2
 	}
-	CalcCount = CalcCount * 1e6
 	wait := sync.WaitGroup{}
 	begin := time.Now()
-	numMap := [4]map[string]int{}
+	numMap := make([]map[string]int, GoCount)
 	rand.Seed(time.Now().UnixNano())
 	waitCalc := sync.WaitGroup{}
-	waitCalc.Add(4)
-	splitCount := CalcCount / 4
-	for step := 0; step < 4; step++ {
+	waitCalc.Add(GoCount)
+	splitCount := CalcCount / GoCount
+	for step := 0; step < GoCount; step++ {
 		go func(index int) {
 			numMap[index] = make(map[string]int)
 			for k := 0; k < splitCount; k++ {
