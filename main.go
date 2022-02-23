@@ -40,9 +40,13 @@ loop2:
 		log.Println("错误,请输入数字类型!!")
 		goto loop2
 	}
+	pNumber := runtime.GOMAXPROCS(0)
+	if pNumber > CalcCount {
+		pNumber = CalcCount
+	}
+	log.Println("启动线程数量 :", pNumber)
 	CalcCount *= 1e6
 	wait := sync.WaitGroup{}
-	pNumber := runtime.GOMAXPROCS(0)
 	wait.Add(pNumber)
 	numMap := map[string]int{}
 	begin := time.Now()
