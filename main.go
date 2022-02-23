@@ -6,27 +6,32 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"runtime"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
 )
 
+var red = []int{
+	1, 2, 3, 4, 5, 6, 7, 8, 9,
+	10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+	20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+	30, 31, 32, 33,
+}
+
+var blue = []int{
+	1, 2, 3, 4, 5, 6, 7, 8, 9,
+	10, 11, 12, 13, 14, 15, 16,
+}
+
 func main() {
 	log.Printf("欢迎使用！")
 
 	log.Printf("双色球一等奖号码计算系统。\n")
 
-	log.Printf("你需要计算几组双色球号码:\n")
-
 	input := bufio.NewScanner(os.Stdin)
-loop:
-	input.Scan()
-	NumCount, err := strconv.Atoi(input.Text())
-	if err != nil {
-		log.Println("错误,请输入数字类型!!")
-		goto loop
-	}
+
 	log.Printf("需要计算多少次（百万）:\n")
 loop2:
 	input.Scan()
@@ -35,52 +40,51 @@ loop2:
 		log.Println("错误,请输入数字类型!!")
 		goto loop2
 	}
+	CalcCount *= 1e6
 	wait := sync.WaitGroup{}
-	wait.Add(NumCount)
-	for i := 0; i < NumCount; i++ {
-		log.Printf("开始计算第%d组。", i+1)
-		go func() {
-			begin := time.Now()
-			numMap := map[string]int{}
-			rand.Seed(time.Now().UnixNano())
-			for i := 0; i < CalcCount*1e6; i++ {
-				nums := []int{}
-				find := func(num int) bool {
-					for _, v := range nums {
-						if v == num {
-							return true
-						}
-					}
-					return false
-				}
-
-				for i := 0; i < 6; i++ {
-					for {
-						redNum := rand.Intn(33) + 1
-						if find(redNum) {
-							continue
-						}
-						nums = append(nums, redNum)
-						break
-					}
-				}
-				blueNum := rand.Intn(16)
-				nums = append(nums, blueNum+1)
-				sort.Ints(nums[:6])
-				numMap[fmt.Sprintf("%v", nums)]++
+	pNumber := runtime.GOMAXPROCS(0)
+	wait.Add(pNumber)
+	numMap := map[string]int{}
+	begin := time.Now()
+	pool := sync.Pool{}
+	pool.New = func() interface{} {
+		return append(red)
+	}
+	localMap := make([]map[string]int, pNumber)
+	for i := 0; i < pNumber; i++ {
+		go func(times int, index int) {
+			localMap[index] = make(map[string]int)
+			for i := 0; i < times; i++ {
+				//random red ball
+				get := pool.Get().([]int)
+				rand.Shuffle(len(get), func(i, j int) {
+					get[i], get[j] = get[j], get[i]
+				})
+				sort.Ints(get[:6])
+				//random blue ball
+				get[6] = blue[rand.Intn(len(blue)-1)]
+				result := fmt.Sprintf("%d,%d,%d,%d,%d,%d %d", get[0], get[1], get[2], get[3], get[4], get[5], get[6])
+				localMap[index][result] += 1
+				pool.Put(get)
 			}
-			max := ""
-			times := 0
-			for k, v := range numMap {
-				if v > times {
-					times = v
-					max = k
-				}
-			}
-			pass := time.Now().Sub(begin)
-			log.Printf("pass %ds key:%s , times :%d", pass/1e9, max, times)
 			wait.Done()
-		}()
+		}(CalcCount/pNumber, i)
 	}
 	wait.Wait()
+	for _, local := range localMap {
+		for key, value := range local {
+			numMap[key] += value
+		}
+	}
+	max := ""
+	times := 0
+	for key, value := range numMap {
+		if value > times {
+			max = key
+			times = value
+		}
+	}
+	pass := time.Now().Sub(begin)
+	log.Printf("num %s times :%d\n", max, times)
+	log.Printf("pass %ds\n", pass/1e9)
 }
